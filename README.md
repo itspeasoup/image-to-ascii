@@ -1,5 +1,9 @@
 # image-to-ascii
-convert an image into ascii art and then paste it anywhere! (yes i made it for ywot)
+literally what it says lmao
+
+UPDAT REAL!!!!
+there's an online version now for mobile, mac, airbook, linux, meta quest, meta quest 2, meta quest 3, meta quest pro, playstation vr, your microwave, toaster etc.
+you can check out here[https://huggingface.co/spaces/peasoup/ascii-to-text]
 
 so you'll be met with a little funky window:
 
