@@ -30,7 +30,7 @@ def convert_to_ascii(image):
     for y in range(new_height):
         for x in range(new_width):
             pixel_value = grayscale_image.getpixel((x, y))
-            if pixel_value == 255:  # make sure to use the GOD DAM transparency
+            if pixel_value == 0:  # make sure to use the GOD DAM transparency
                 ascii_image += ' '
             else:
                 ascii_image += ascii_chars[int(pixel_value / 255 * (len(ascii_chars) - 1))]
