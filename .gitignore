@@ -1,0 +1,25 @@
+# compiled files
+__pycache__/
+*.pyc
+*.pyo
+
+# virtual environments
+venv/
+env/
+
+# pyinstaller output
+build/
+dist/
+*.spec
+
+# mac/windows cruft
+.DS_Store
+Thumbs.db
+
+# ide/project files
+*.vscode/
+.idea/
+
+# logs/temp
+*.log
+*.tmp
