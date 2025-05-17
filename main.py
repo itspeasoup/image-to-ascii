@@ -1,17 +1,36 @@
+# ascii image converter by peasoup
+# Copyright (C) 2025 peasoup
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License.
+# See <https://www.gnu.org/licenses/> for details.
+
 import tkinter as tk
 from tkinter import filedialog
-from PIL import Image, ImageTk
+from tkinterdnd2 import DND_FILES, TkinterDnD
+from PIL import Image, ImageTk, ImageGrab
+import pyperclip
+import os
 
-def open_image():
-    global image_path, gimage
-    image_path = filedialog.askopenfilename(filetypes=[("images", "*.jpg;*.jpeg;*.png;*.gif;*.bmp;*.webp"),("jpeg (microsoft paint quality)","*.jpg"),("png (good quality + transparency)","*.png"),("gif (text won't be animated)","*.gif"),("bmp (raster/bitmap)","*.bmp"),("webp (the one you downloaded from google images or discord probably + transparency)","*.webp")])
-    if image_path:
-        gimage = Image.open(image_path)
-        gimage.thumbnail((200, 200))  # adjust the size for display
-        img_label.image = ImageTk.PhotoImage(gimage)
-        img_label.config(image=img_label.image)
-        convert_to_ascii(gimage)
+def open_image(event=None):
+    file = filedialog.askopenfilename(filetypes=[
+        ("images", "*.jpg;*.jpeg;*.png;*.gif;*.bmp;*.webp"),
+        ("jpeg", "*.jpg"),
+        ("png", "*.png"),
+        ("gif", "*.gif"),
+        ("bmp", "*.bmp"),
+        ("webp", "*.webp")
+    ])
+    if file:
+        load_and_convert(file)
 
+def load_and_convert(path):
+    global gimage
+    gimage = Image.open(path).convert("RGBA")
+    gimage.thumbnail((200, 200))
+    img_label.image = ImageTk.PhotoImage(gimage)
+    img_label.config(image=img_label.image)
+    convert_to_ascii(gimage)
 
 def convert_to_ascii(image):
     text_size = int(text_size_entry.get())
@@ -21,36 +40,68 @@ def convert_to_ascii(image):
     new_width = text_size
     new_height = int(aspect_ratio * text_size * 0.5)
 
-    resized_image = image.resize((new_width, new_height))
-    grayscale_image = resized_image.convert('L')
+    resized = image.resize((new_width, new_height)).convert("RGBA")
 
-    ascii_chars = '█@&%#*░+=-:,.\/|][}{)(´„‟‚‛‘ '  # add more characters if you want
+    ascii_chars = ' .`^",:;Il!i~+_-?][}{1)(|\\/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$⣿'
+    ascii_chars = ascii_chars[::-1]
 
     ascii_image = ''
     for y in range(new_height):
         for x in range(new_width):
-            pixel_value = grayscale_image.getpixel((x, y))
-            if pixel_value == 0:  # make sure to use the GOD DAM transparency
+            r, g, b, a = resized.getpixel((x, y))
+            if a == 0:
                 ascii_image += ' '
             else:
-                ascii_image += ascii_chars[int(pixel_value / 255 * (len(ascii_chars) - 1))]
+                gray = int(0.299*r + 0.587*g + 0.114*b)
+                ascii_image += ascii_chars[int(gray / 255 * (len(ascii_chars) - 1))]
         ascii_image += '\n'
 
-    ascii_text.config(font=("Courier New", 8))  # set the font to "Courier New"
+    ascii_text.config(font=("Source Code Pro", 4))
     ascii_text.delete('1.0', tk.END)
     ascii_text.insert(tk.END, ascii_image)
 
-
-
 def on_text_size_change(event):
-    convert_to_ascii(gimage)
+    if gimage:
+        convert_to_ascii(gimage)
+
+def on_drop(event):
+    file_path = event.data.strip('{}')  # handles paths with spaces
+    if os.path.isfile(file_path):
+        load_and_convert(file_path)
+
+def on_paste(event=None):
+    try:
+        img = ImageGrab.grabclipboard()
+        if isinstance(img, Image.Image):
+            global gimage
+            gimage = img.convert("RGBA")
+            gimage.thumbnail((200, 200))
+            img_label.image = ImageTk.PhotoImage(gimage)
+            img_label.config(image=img_label.image)
+            load_and_convert(gimage)
+    except Exception as e:
+        print("paste failed:", e)
+
+def save_ascii():
+    content = ascii_text.get("1.0", tk.END)
+    file = filedialog.asksaveasfilename(defaultextension=".txt", filetypes=[("Text File", "*.txt")])
+    if file:
+        with open(file, "w", encoding="utf-8") as f:
+            f.write(content)
+
+def copy_ascii():
+    content = ascii_text.get("1.0", tk.END)
+    pyperclip.copy(content)
 
 # GUI
-root = tk.Tk()
+root = TkinterDnD.Tk()
 root.title("image-to-ascii (by peasoup)")
 
-image_path = ""
 gimage = None
+
+root.drop_target_register(DND_FILES)
+root.dnd_bind('<<Drop>>', on_drop)
+root.bind("<Control-v>", on_paste)
 
 open_button = tk.Button(root, text="open image", command=open_image)
 open_button.pack()
@@ -66,10 +117,19 @@ text_size_label.pack(side=tk.LEFT)
 
 text_size_entry = tk.Entry(text_size_frame)
 text_size_entry.pack(side=tk.LEFT)
-text_size_entry.insert(0, "100")  # that's the default text size
+text_size_entry.insert(0, "100")
 text_size_entry.bind("<Return>", on_text_size_change)
 
-ascii_text = tk.Text(root, height=20, width=50, font=("Courier New", 8))  # set the font
+ascii_text = tk.Text(root, height=50, width=120, font=("Source Code Pro", 4))
 ascii_text.pack()
+
+action_frame = tk.Frame(root)
+action_frame.pack()
+
+save_button = tk.Button(action_frame, text="save ascii", command=save_ascii)
+save_button.pack(side=tk.LEFT, padx=5)
+
+copy_button = tk.Button(action_frame, text="copy ascii", command=copy_ascii)
+copy_button.pack(side=tk.LEFT, padx=5)
 
 root.mainloop()
